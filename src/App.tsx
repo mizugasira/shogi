@@ -309,6 +309,14 @@ function hasPawnInFile(board: Board, side: Side, col: number): boolean {
   return false;
 }
 
+function resetP2P() {
+  try { rtc.pc?.close(); } catch {}
+  setRtc({ pc: null, dc: null, connected: false, isHost: false });
+  setLocalSDP("");
+  setRemoteSDP("");
+}
+
+
 /** ===== UI ===== **/
 export default function ShogiApp() {
   const [board, setBoard] = useState<Board>(() => initialBoard());
@@ -367,40 +375,96 @@ export default function ShogiApp() {
     }
   };
 
+  async function waitForIceGathering(pc: RTCPeerConnection): Promise<void> {
+    if (pc.iceGatheringState === "complete") return;
+    await new Promise<void>((resolve) => {
+      const onChange = () => {
+        if (pc.iceGatheringState === "complete") {
+          pc.removeEventListener("icegatheringstatechange", onChange);
+          resolve();
+        }
+      };
+      pc.addEventListener("icegatheringstatechange", onChange);
+      // 念のための保険：一部環境ではtrickle前提でも接続できるので2秒で妥協
+      setTimeout(() => resolve(), 2000);
+    });
+  }
+
   // 接続開始（ホスト or ゲスト）
   async function startHost() {
+    if (rtc.pc) return; // 二重実行防止
     const { pc, getDC } = createPeer(true, applyRemoteAction);
-    const offer = await pc.createOffer();
-    await pc.setLocalDescription(offer);
-    setLocalSDP(JSON.stringify(offer));
+
     pc.oniceconnectionstatechange = () => {
       if (pc.iceConnectionState === "connected") {
         setRtc({ pc, dc: getDC(), connected: true, isHost: true });
       }
     };
+
+    const offer = await pc.createOffer();
+    await pc.setLocalDescription(offer);
+    await waitForIceGathering(pc);                 // ★ ここが重要
+    setLocalSDP(JSON.stringify(pc.localDescription)); // 完全なSDP（ICE込み）を表示
+
     setRtc((s) => ({ ...s, pc, isHost: true }));
   }
 
   async function acceptAsGuest() {
+    if (rtc.pc) return;
+    if (!remoteSDP) return;
+
     const offer: RTCSessionDescriptionInit = JSON.parse(remoteSDP);
+    if (offer.type !== "offer") {
+      alert("ゲスト側はホストの offer を貼ってください（answerではありません）。");
+      return;
+    }
+
     const { pc, getDC } = createPeer(false, applyRemoteAction);
-    await pc.setRemoteDescription(offer);
-    const answer = await pc.createAnswer();
-    await pc.setLocalDescription(answer);
-    setLocalSDP(JSON.stringify(answer));
+
     pc.oniceconnectionstatechange = () => {
       if (pc.iceConnectionState === "connected") {
         setRtc({ pc, dc: getDC(), connected: true, isHost: false });
       }
     };
+
+    if (pc.signalingState !== "stable") {
+      alert(`状態が不正です: ${pc.signalingState}。やり直してください。`);
+      return;
+    }
+
+    await pc.setRemoteDescription(offer);
+    const answer = await pc.createAnswer();
+    await pc.setLocalDescription(answer);
+    await waitForIceGathering(pc);                  // ★ ここが重要
+    setLocalSDP(JSON.stringify(pc.localDescription));
+
     setRtc((s) => ({ ...s, pc, isHost: false }));
   }
 
+
   async function finishHost() {
     if (!rtc.pc) return;
+    if (!rtc.isHost) { alert("ホストのみ実行できます"); return; }
+    if (!remoteSDP) { alert("ゲストからの answer を右欄に貼ってください"); return; }
+
     const answer: RTCSessionDescriptionInit = JSON.parse(remoteSDP);
-    await rtc.pc.setRemoteDescription(answer);
+    if (answer.type !== "answer") {
+      alert("ここにはゲストの answer を貼ってください（offer ではありません）");
+      return;
+    }
+    if (rtc.pc.signalingState !== "have-local-offer") {
+      alert(`現在の状態では受け付けできません: ${rtc.pc.signalingState}\n最初からやり直してください。`);
+      return;
+    }
+
+    try {
+      await rtc.pc.setRemoteDescription(answer);
+    } catch (e) {
+      console.error(e);
+      alert("setRemoteDescription に失敗しました。最初からやり直してください。");
+    }
   }
+
 
 
   const moves = useMemo(() => {
