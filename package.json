@@ -18,7 +18,7 @@
     "web-vitals": "^2.1.4"
   },
   "name": "shogi-app",
-  "homepage": "https://mizugasira.github.io/shogi-app",
+  "homepage": "https://mizugasira.github.io/shogi/",
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
