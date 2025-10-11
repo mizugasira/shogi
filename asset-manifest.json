@@ -1,0 +1,15 @@
+{
+  "files": {
+    "main.css": "/shogi-app/static/css/main.b4141827.css",
+    "main.js": "/shogi-app/static/js/main.61cb9822.js",
+    "static/js/453.ab772d41.chunk.js": "/shogi-app/static/js/453.ab772d41.chunk.js",
+    "index.html": "/shogi-app/index.html",
+    "main.b4141827.css.map": "/shogi-app/static/css/main.b4141827.css.map",
+    "main.61cb9822.js.map": "/shogi-app/static/js/main.61cb9822.js.map",
+    "453.ab772d41.chunk.js.map": "/shogi-app/static/js/453.ab772d41.chunk.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.b4141827.css",
+    "static/js/main.61cb9822.js"
+  ]
+}
