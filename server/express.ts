@@ -13,7 +13,11 @@ process.on("unhandledRejection", (reason) => {
 
 // フロントで使っている ai-core.ts をそのままサーバーで使用
 // 👉 ESMでは「.js」拡張子で指定する必要があります
+<<<<<<< HEAD
 import { think, unpack, type InputState } from "../src/ai-core";
+=======
+import { think, unpack, type InputState } from "../src/ai-core.js";
+>>>>>>> cef1c4c5e87d2aad21e1b5d9ba9b29cd64488342
 
 const app = express();
 app.use(cors());
