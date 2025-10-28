@@ -335,6 +335,7 @@ export default function ShogiApp() {
     } catch (e) {
       console.error("unpackFromServer error:", e);
     }
+    return null;
   }
 
   /** ====== クリック処理 ====== */
