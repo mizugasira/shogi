@@ -294,24 +294,6 @@ export default function ShogiApp() {
     if (broadcast) sendWire({ type: "move", payload: ply });
   };
 
-  /** ====== サーバーAI：pack形式の指し手をunpack ====== */
-<<<<<<< HEAD
-  function unpackFromServer(packed: string): PlyMove | null {
-    try {
-      if (packed.startsWith("d:")) {
-        const rest = packed.split(":")[1];
-        const [pc, r, c] = rest.split(",");
-        return { kind: "drop", side: "white", piece: pc as any, at: { r: Number(r), c: Number(c) } };
-      } else if (packed.startsWith("m:")) {
-        const rest = packed.split(":")[1];
-        const [frS, fcS, trS, tcS, pS] = rest.split(",");
-        const fr = Number(frS), fc = Number(fcS), tr = Number(trS), tc = Number(tcS);
-        const p = Number(pS);
-        const took = board[tr][tc].piece ?? null;
-        return { kind: "move", side: "white", from: { r: fr, c: fc }, to: { r: tr, c: tc }, took, promote: !!p };
-      }
-    } catch { /* noop */ }
-=======
   /** ====== サーバーAI：pack形式 or JSON形式の指し手をunpack ====== */
   function unpackFromServer(packed: any): PlyMove | null {
     try {
@@ -353,8 +335,6 @@ export default function ShogiApp() {
     } catch (e) {
       console.error("unpackFromServer error:", e);
     }
->>>>>>> cef1c4c5e87d2aad21e1b5d9ba9b29cd64488342
-    return null;
   }
 
   /** ====== クリック処理 ====== */
@@ -407,21 +387,10 @@ export default function ShogiApp() {
 
         const canPromoteBasic = isPromotableType(selPiece.type) && involvesEnemyZone(moverSide, selPos.r, r);
         const mustPromote = isPromotableType(selPiece.type) && isForcedPromotion(moverSide, selPiece.type, r);
-<<<<<<< HEAD
-
         const commit = (promote: boolean) => {
           const ply: PlyMove = { kind: "move", side: moverSide, from: { r: selPos.r, c: selPos.c }, to: { r, c }, took: destPiece ?? null, promote };
           applyPly(ply, true);
         };
-
-=======
-
-        const commit = (promote: boolean) => {
-          const ply: PlyMove = { kind: "move", side: moverSide, from: { r: selPos.r, c: selPos.c }, to: { r, c }, took: destPiece ?? null, promote };
-          applyPly(ply, true);
-        };
-
->>>>>>> cef1c4c5e87d2aad21e1b5d9ba9b29cd64488342
         if (mustPromote) { commit(true); return; }
         if (canPromoteBasic) {
           setPromoAsk({ from: { r: selPos.r, c: selPos.c }, to: { r, c }, mover: { ...selPiece }, took: destPiece ? { ...destPiece } : null });
