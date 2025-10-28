@@ -140,6 +140,11 @@ export default function ShogiApp() {
   const [useServerAI] = useState<boolean>(true);
   const AI_ENDPOINT = process.env.REACT_APP_AI_ENDPOINT ?? ""; // 例: https://<your-vercel-app>.vercel.app/api/think
 
+  const apiBase =
+    process.env.NODE_ENV === "production"
+      ? "https://shogi-6izo.vercel.app/"  // ← あなたの Vercel API のURL
+      : "http://localhost:3001";
+
   // P2P
   const pcRef = useRef<RTCPeerConnection | null>(null);
   const dcRef = useRef<RTCDataChannel | null>(null);
@@ -433,7 +438,7 @@ export default function ShogiApp() {
 
     const id = setTimeout(async () => {
       try {
-        const resp = await fetch(AI_ENDPOINT, {
+        const resp = await fetch(`${apiBase}/api/think`, {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({ board, handBlack, handWhite, turn: "white", history, timeMs: 1500 })
