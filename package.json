@@ -26,7 +26,10 @@
     "dev": "concurrently \"npm run start\" \"npm run start:server\"",
     "build": "react-scripts build",
     "predeploy": "npm run build && copy build\\index.html build\\404.html",
-    "deploy": "gh-pages -d build"
+    "deploy": "gh-pages -d build",
+    "build:ai": "tsc src/ai-core.ts --target ES2020 --module ESNext --outDir dist",
+    "build:server": "tsc server/express.ts --target ES2020 --module ESNext --outDir dist",
+    "build:all": "tsc --project tsconfig.json"
   },
   "eslintConfig": {
     "extends": [

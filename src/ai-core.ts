@@ -344,8 +344,6 @@ export function think(board:Board, handBlack:Hand, handWhite:Hand, side:Side, ti
 
   const start = Date.now();
   const MAX_DEPTH = 8;
-  let best:PackedMove|null = null;
-  let bestScore = -1e9;
   let depth = 1;
   let aspiration = 50;
   let windowAlpha = -1e9, windowBeta = 1e9;
