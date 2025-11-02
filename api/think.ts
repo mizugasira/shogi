@@ -1,5 +1,5 @@
 // api/think.ts
-import { think, unpack, type Board, type Hand, type PlyMove, type Side } from "../ai-core.js";
+import { think, unpack, type Board, type Hand, type PlyMove, type Side } from "../src/ai-core.js";
 
 // CORS を必要最小限に（必要に応じて origin を絞ってください）
 const allowCORS = (res: any) => {
