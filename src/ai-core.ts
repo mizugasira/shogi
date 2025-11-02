@@ -389,12 +389,6 @@ function search(
   key:number, ply:number, start:number, limitMs:number,
   tt:TransTable, killers:Record<number, PackedMove[]>, history:Record<string,number>, zob:Zobrist, pv?:PackedMove
 ): {score:number; move:PackedMove|null}{
-    if (depth >= 3 && !inCheck) {
-      const nullScore = -search(bd, hB, hW, opposite(side),
-        depth - 3 - 1, -beta, -beta + 1, key, ply + 1,
-        start, limitMs, tt, killers, history, zob).score;
-      if (nullScore >= beta) return { score: beta, move: null };
-    }
   if(Date.now()-start > limitMs) return { score: alpha, move:null };
 
   const myK = findKing(bd, side);
@@ -413,6 +407,37 @@ function search(
     const qs = quiescence(bd,hB,hW,side,alpha,beta);
     return { score: qs, move:null };
   }
+    // 王手判定: 自玉に利きが通っていれば inCheck = true
+    const [kr, kc] = myK;
+    let inCheck = false;
+    for (let r = 0; r < 9; r++) {
+      for (let c = 0; c < 9; c++) {
+        const p = bd[r][c].piece;
+        if (!p || p.side === side) continue;
+        const moves = legalMoves(bd, r, c);
+        if (moves.some(([tr, tc]) => tr === kr && tc === kc)) {
+          inCheck = true;
+          break;
+        }
+      }
+      if (inCheck) break;
+    }
+
+    // Null Move Pruning: 王手されておらず深さがある程度ある場合のみ
+    if (depth >= 3 && !inCheck) {
+      const nullDepth = depth - 3 - 1;
+      const nullScore = -search(
+        bd, hB, hW, side === "black" ? "white" : "black",
+        nullDepth, -beta, -beta + 1,
+        key, ply + 1, start, limitMs,
+        tt, killers, history, zob
+      ).score;
+
+      // β以上なら枝刈り（これ以上探索しなくて良い）
+      if (nullScore >= beta) {
+        return { score: beta, move: null };
+      }
+    }
 
   let bestMove:PackedMove|null = null;
   let a = alpha;
