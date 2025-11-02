@@ -343,7 +343,10 @@ export function think(board:Board, handBlack:Hand, handWhite:Hand, side:Side, ti
   const history:Record<string, number> = {};
 
   const start = Date.now();
-  const MAX_DEPTH = 8;
+
+  const timeLimit = Math.min(timeMs ?? 2000, 8000);
+  const maxDepth = timeLimit < 1500 ? 5 : timeLimit < 3000 ? 6 : 7;
+
   let depth = 1;
   let aspiration = 50;
   let windowAlpha = -1e9, windowBeta = 1e9;
@@ -354,25 +357,26 @@ export function think(board:Board, handBlack:Hand, handWhite:Hand, side:Side, ti
     let best:PackedMove|null = pack(rootMoves[0]);  // ←最低限の一手
     let bestScore = -1e9;
 
-  while(depth<=MAX_DEPTH){
-    const remain = timeMs - (Date.now()-start);
-    // ★ 変更: 深さ1だけは必ず走らせる。以降は残り時間が乏しければ終了
-    if (depth > 1 && remain < 120) break;
+  while (depth <= maxDepth) {
+      const remain = timeLimit - (Date.now() - start);
+      if (remain < 100) break;
 
-    const key = keyBoard(board,handBlack,handWhite,side,zob);
-    const { score, move } = search(board, handBlack, handWhite, side, depth, windowAlpha, windowBeta, key, 0, start, timeMs, tt, killers, history, zob, best ?? undefined);
+      const key = keyBoard(board, handBlack, handWhite, side, zob);
+      const { score, move } = search(board, handBlack, handWhite, side, depth, windowAlpha, windowBeta, key, 0, start, timeLimit, tt, killers, history, zob, best ?? undefined);
 
-    if(score<=windowAlpha){ windowAlpha -= aspiration; windowBeta = score + aspiration; continue; }
-    if(score>=windowBeta){ windowBeta += aspiration; windowAlpha = score - aspiration; continue; }
+      if (score <= windowAlpha) { windowAlpha -= aspiration; windowBeta = score + aspiration; continue; }
+      if (score >= windowBeta) { windowBeta += aspiration; windowAlpha = score - aspiration; continue; }
 
-    if(move){ best = move; bestScore = score; }
-    depth++;
-    aspiration = Math.max(30, Math.floor(aspiration*0.9));
-    windowAlpha = bestScore - aspiration;
-    windowBeta  = bestScore + aspiration;
+      if (move) { best = move; bestScore = score; }
 
-    if(Date.now()-start > timeMs) break;
-  }
+      depth++;
+      aspiration = Math.max(30, Math.floor(aspiration * 0.9));
+      windowAlpha = bestScore - aspiration;
+      windowBeta  = bestScore + aspiration;
+
+      // ⏱️ 制限超えチェック
+      if (Date.now() - start > timeLimit) break;
+    }
 
   return best;
 }
