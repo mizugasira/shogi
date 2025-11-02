@@ -18,16 +18,56 @@ export default async function handler(req: any, res: any) {
       board: Board; handBlack: Hand; handWhite: Hand; turn: Side; timeMs?: number;
     };
 
-    // 探索はパックドムーブを返す
-    const packed = think(board, handBlack, handWhite, turn, timeMs ?? 1200);
-    // 参考：完全な PlyMove を返したい場合はサーバ側で unpack して返せます
-    let move: PlyMove | null = null;
-    if (packed) move = unpack(packed, board) as PlyMove;
+    // ---- 🔥 タイムアウト監視（例: 8秒で打ち切る） ----
+    const timeoutMs = 8000;
+    let timedOut = false;
 
-    // クライアントでは packed を解釈するので両方返します
+    const timeoutPromise = new Promise((_, reject) =>
+      setTimeout(() => {
+        timedOut = true;
+        reject(new Error("AI timeout"));
+      }, timeoutMs)
+    );
+
+    const thinkPromise = (async () => {
+      const packed = think(board, handBlack, handWhite, turn, timeMs ?? 1200);
+      return packed;
+    })();
+
+    const packed = await Promise.race([thinkPromise, timeoutPromise]).catch(() => null);
+
+    if (timedOut || !packed) {
+      console.warn("⚠️ AI think() timed out or returned null");
+      // フォールバック：最初に見つけた合法手を返す
+      const fallback = findFirstLegalMove(board, turn);
+      if (fallback) return res.json({ move: fallback, fallback: true });
+      return res.status(200).json({ move: null, error: "timeout" });
+    }
+
+    const move = unpack(packed, board);
     res.json({ move: packed, ply: move });
+
   } catch (e: any) {
     console.error(e);
     res.status(500).json({ error: "server error" });
   }
+}
+
+/** 最低限の合法手（AIが落ちたとき用） */
+function findFirstLegalMove(board: Board, side: Side): string | null {
+  for (let r = 0; r < board.length; r++) {
+    for (let c = 0; c < board[r].length; c++) {
+      const p = board[r][c].piece;
+      if (p && p.side === side) {
+        const dirs = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+        for (const [dr, dc] of dirs) {
+          const tr = r + dr, tc = c + dc;
+          if (tr >= 0 && tr < 9 && tc >= 0 && tc < 9 && !board[tr][tc].piece) {
+            return `m:${r},${c},${tr},${tc},0`;
+          }
+        }
+      }
+    }
+  }
+  return null;
 }

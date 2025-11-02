@@ -447,9 +447,13 @@ export default function ShogiApp() {
         if (data?.move) {
           const ply = unpackFromServer(data.move);
           if (ply) applyPly(ply, true);
+        } else {
+          console.warn("AI応答が無効です:", data);
+          setTurn(t => (t === "black" ? "white" : "black"));
         }
       } catch (e) {
         console.error("AI server error:", e);
+        setTurn(t => (t === "black" ? "white" : "black"));
       }
     }, 120);
     return () => clearTimeout(id);
