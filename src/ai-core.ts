@@ -350,9 +350,16 @@ export function think(board:Board, handBlack:Hand, handWhite:Hand, side:Side, ti
   let aspiration = 50;
   let windowAlpha = -1e9, windowBeta = 1e9;
 
+    // ★ 追加: ルート合法手を取得してフォールバックを確保
+    const rootMoves = enumerateMovesGeneric(board, handBlack, handWhite, side);
+    if (rootMoves.length === 0) return null; // 詰み
+    let best:PackedMove|null = pack(rootMoves[0]);  // ←最低限の一手
+    let bestScore = -1e9;
+
   while(depth<=MAX_DEPTH){
     const remain = timeMs - (Date.now()-start);
-    if(remain < 150) break;
+    // ★ 変更: 深さ1だけは必ず走らせる。以降は残り時間が乏しければ終了
+    if (depth > 1 && remain < 120) break;
 
     const key = keyBoard(board,handBlack,handWhite,side,zob);
     const { score, move } = search(board, handBlack, handWhite, side, depth, windowAlpha, windowBeta, key, 0, start, timeMs, tt, killers, history, zob, best ?? undefined);
