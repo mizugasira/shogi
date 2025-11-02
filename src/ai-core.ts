@@ -389,6 +389,12 @@ function search(
   key:number, ply:number, start:number, limitMs:number,
   tt:TransTable, killers:Record<number, PackedMove[]>, history:Record<string,number>, zob:Zobrist, pv?:PackedMove
 ): {score:number; move:PackedMove|null}{
+    if (depth >= 3 && !inCheck) {
+      const nullScore = -search(bd, hB, hW, opposite(side),
+        depth - 3 - 1, -beta, -beta + 1, key, ply + 1,
+        start, limitMs, tt, killers, history, zob).score;
+      if (nullScore >= beta) return { score: beta, move: null };
+    }
   if(Date.now()-start > limitMs) return { score: alpha, move:null };
 
   const myK = findKing(bd, side);
