@@ -412,6 +412,11 @@ function search(
     const qs = quiescence(bd,hB,hW,side,alpha,beta);
     return { score: qs, move:null };
   }
+  // 枝刈り (Futility pruning)
+  if (depth <= 2 && Math.abs(beta - alpha) > 200) {
+    const evalScore = evaluateBoard(bd, hB, hW) * (side === "white" ? 1 : -1);
+    if (evalScore + 150 < alpha) return { score: evalScore, move: null };
+  }
     // 王手判定: 自玉に利きが通っていれば inCheck = true
     const [kr, kc] = myK;
     let inCheck = false;
