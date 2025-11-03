@@ -1,46 +1,213 @@
-# Getting Started with Create React App
+# 🧩 Shogi AI Web App
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+将棋AIを搭載したWebアプリケーションです。  
+フロントエンドはReact（TypeScript）で実装し、サーバー側ではNode/Express上でAIエンジン（`ai-core.ts`）が動作します。  
+Vercelにデプロイして、オンラインでも思考サーバーを呼び出せます。
 
-## Available Scripts
+---
 
-In the project directory, you can run:
+## 📁 プロジェクト構成
 
-### `npm start`
+```
+shogi-app/
+├─ src/                  # フロントエンド（React + TypeScript）
+│  ├─ App.tsx            # 将棋盤・UIのメイン画面
+│  ├─ ai-core.ts         # 将棋AIのロジック（αβ探索＋静止探索）
+│  ├─ index.tsx          # Reactエントリーポイント
+│  ├─ index.css
+│  └─ ...
+│
+├─ server/
+│  └─ express.ts         # Node.js + Express APIサーバー
+│
+├─ api/
+│  └─ think.ts           # Vercel用APIルート（AIのエンドポイント）
+│
+├─ package.json
+├─ tsconfig.json
+├─ vercel.json           # デプロイ設定
+└─ README.md
+```
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
+---
 
-The page will reload if you make edits.\
-You will also see any lint errors in the console.
+## 🧠 機能概要
 
-### `npm test`
+| 機能 | 内容 |
+|------|------|
+| 将棋盤UI | Reactで描画、手を指すと自動でAI応答 |
+| AI思考 | `ai-core.ts` にてαβ探索・静止探索・トランスポジションテーブル搭載 |
+| 通信方式 | `/api/think` 経由でAIサーバーと通信（ローカル or Vercel） |
+| デプロイ | フロントはGitHub Pages、AIはVercel Functionsで稼働 |
+| タイムアウト対応 | 処理時間超過時は安全にnullレスポンスを返却 |
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+---
 
-### `npm run build`
+## ⚙️ 環境構築（ローカル実行）
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+### 1️⃣ 必要環境
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+- Node.js v18以上（推奨 v20）
+- npm v8以上
+- Git（任意）
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+---
 
-### `npm run eject`
+### 2️⃣ クローン
 
-**Note: this is a one-way operation. Once you `eject`, you can’t go back!**
+```bash
+git clone https://github.com/mizugasira/shogi.git
+cd shogi
+```
 
-If you aren’t satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+---
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you’re on your own.
+### 3️⃣ 依存関係のインストール
 
-You don’t have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn’t feel obligated to use this feature. However we understand that this tool wouldn’t be useful if you couldn’t customize it when you are ready for it.
+```bash
+npm install
+```
 
-## Learn More
+---
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+### 4️⃣ 開発サーバーの起動
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+フロントとAIサーバーを同時に起動します。
+
+```bash
+npm run dev
+```
+
+または個別に起動：
+
+```bash
+# フロントエンド (http://localhost:3000)
+npm start
+
+# サーバー側AI (http://localhost:3001)
+npm run start:server
+```
+
+---
+
+### 5️⃣ ブラウザで確認
+
+```
+http://localhost:3000/shogi
+```
+
+AIが動作していれば、手を指したあと自動的に応答します。
+
+---
+
+## 🌐 デプロイ（Vercel）
+
+### 1️⃣ Vercelに接続
+
+[Vercel](https://vercel.com/) にアクセスし、GitHub連携を行います。
+
+### 2️⃣ プロジェクトをインポート
+
+リポジトリを選択してインポートします。
+
+### 3️⃣ 設定ファイル
+
+`vercel.json` があることを確認してください。
+
+```json
+{
+  "functions": {
+    "api/think.ts": {
+      "runtime": "nodejs20"
+    }
+  }
+}
+```
+
+### 4️⃣ 自動デプロイ設定
+
+VercelのDashboard → Deployments → Git Integration から  
+「**Automatic Deployments → Enabled**」にします。
+
+これで、GitHubにプッシュするたび自動反映されます。
+
+---
+
+## 🧩 API概要
+
+### エンドポイント
+```
+POST /api/think
+```
+
+### Request Body
+```json
+{
+  "board": [[{ "piece": { "side": "black", "type": "P" } }, ...]],
+  "handBlack": { "P": 0, "R": 0, "B": 0 },
+  "handWhite": { "P": 0, "R": 0, "B": 0 },
+  "turn": "black",
+  "timeMs": 2000
+}
+```
+
+### Response
+```json
+{
+  "move": "m:6,6,6,5,0",
+  "ply": {
+    "kind": "move",
+    "side": "black",
+    "from": { "r": 6, "c": 6 },
+    "to": { "r": 6, "c": 5 },
+    "took": null,
+    "promote": false
+  }
+}
+```
+
+---
+
+## 🚀 高速化ポイント（AI最適化済み）
+
+- 探索時間上限を自動制御（平均2秒以内に応答）
+- トランスポジションテーブルで局面キャッシュ
+- αβ探索 + 静止探索 + 枝刈り
+- タイムアウト対策付き Promise.race による安全返却
+
+---
+
+## ⚡ トラブルシューティング
+
+| 症状 | 対処法 |
+|------|---------|
+| `react-scripts not found` | `npm install` を再実行 |
+| `net::ERR_CONNECTION_REFUSED` | `npm run start:server` が起動しているか確認 |
+| `405 Method Not Allowed` | `/api/think` がPOST専用であるためGETリクエストを確認 |
+| `FUNCTION_INVOCATION_TIMEOUT` | `ai-core.ts` の探索時間を短くする（例: MAX_DEPTH=6） |
+
+---
+
+## 🧩 ライセンス
+
+このプロジェクトはMITライセンスで公開されています。  
+研究・学習・個人利用目的で自由に改変可能です。
+
+---
+
+## 🧠 補足（将棋ウォーズ級への拡張構想）
+
+将来的に以下のような改良を加えることで、さらに強力かつ高速化できます：
+
+- NNUE評価関数（ニューラルネット評価の導入）
+- WebWorkerによる並列探索
+- LMR / NullMove / Aspiration Window の強化
+- WASM化（ブラウザでの高速思考）
+
+---
+
+### 🧩 作者
+
+**mizu**  
+AI × 将棋 × Webアプリを組み合わせた技術実験プロジェクトです。  
+質問・改善提案はお気軽にどうぞ。
